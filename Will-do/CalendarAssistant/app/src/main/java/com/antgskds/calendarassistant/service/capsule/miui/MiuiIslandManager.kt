@@ -44,8 +44,12 @@ object MiuiIslandManager {
     )
 
     fun update(context: Context, capsules: List<CapsuleUiState.Active.CapsuleItem>) {
-        // 优先使用官方 API（Android 14+ HyperOS）
-        if (isHyperOsWithOfficialFocusSupport()) {
+        // 检查设置是否启用了超级岛通知
+        val settings = com.antgskds.calendarassistant.data.repository.AppRepository.getInstance(context).settings.value
+        val isFocusEnabled = settings.isHyperOsFocusNotificationEnabled
+        
+        // 优先使用官方 API（Android 14+ HyperOS 且设置开启）
+        if (isFocusEnabled && isHyperOsWithOfficialFocusSupport()) {
             sendOfficialFocusNotification(context, capsules)
             return
         }

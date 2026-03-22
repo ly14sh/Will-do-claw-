@@ -70,5 +70,8 @@ data class MySettings(
     val isRecurringCalendarSyncEnabled: Boolean = false,
 
     // 捐赠状态
-    val hasDonated: Boolean = false
+    val hasDonated: Boolean = false,
+
+    // 【新增】小米超级岛通知开关 (HyperOS 官方 API)
+    val isHyperOsFocusNotificationEnabled: Boolean = true
 )

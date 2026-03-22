@@ -108,7 +108,8 @@ class SettingsViewModel(
         autoArchive: Boolean? = null,
         useMultimodalAi: Boolean? = null,
         disableThinking: Boolean? = null,
-        floatingEventRange: Int? = null
+        floatingEventRange: Int? = null,
+        hyperOsFocusNotification: Boolean? = null
     ) {
         viewModelScope.launch {
             var current = settings.value
@@ -125,6 +126,7 @@ class SettingsViewModel(
             if (useMultimodalAi != null) current = current.copy(useMultimodalAi = useMultimodalAi)
             if (disableThinking != null) current = current.copy(disableThinking = disableThinking)
             if (floatingEventRange != null) current = current.copy(floatingEventRange = floatingEventRange)
+            if (hyperOsFocusNotification != null) current = current.copy(isHyperOsFocusNotificationEnabled = hyperOsFocusNotification)
 
             repository.updateSettings(current)
         }

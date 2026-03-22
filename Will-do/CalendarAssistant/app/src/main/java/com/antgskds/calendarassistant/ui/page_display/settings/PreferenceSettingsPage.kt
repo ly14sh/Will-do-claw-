@@ -261,6 +261,22 @@ fun PreferenceSettingsPage(
                             color = MaterialTheme.colorScheme.error
                         )
                     }
+                    // 小米超级岛通知开关（仅 HyperOS 显示）
+                    if (com.antgskds.calendarassistant.core.util.OsUtils.isHyperOS()) {
+                        HorizontalDivider(
+                            modifier = Modifier.padding(start = 16.dp),
+                            thickness = 0.5.dp,
+                            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+                        )
+                        SwitchSettingItem(
+                            title = "小米超级岛通知",
+                            subtitle = "使用 HyperOS 官方焦点通知 API（Android 14+）",
+                            checked = settings.isHyperOsFocusNotificationEnabled,
+                            onCheckedChange = { viewModel.updatePreference(hyperOsFocusNotification = it) },
+                            cardTitleStyle = cardTitleStyle,
+                            cardSubtitleStyle = cardSubtitleStyle
+                        )
+                    }
                 }
             }
 
