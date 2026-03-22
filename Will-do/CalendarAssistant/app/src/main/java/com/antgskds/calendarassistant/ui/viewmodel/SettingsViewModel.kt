@@ -1,0 +1,304 @@
+package com.antgskds.calendarassistant.ui.viewmodel
+
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.antgskds.calendarassistant.data.repository.AppRepository
+import com.antgskds.calendarassistant.core.calendar.CalendarSyncManager
+import com.antgskds.calendarassistant.core.importer.ImportMode
+import com.antgskds.calendarassistant.core.importer.WakeUpCourseImporter
+import com.antgskds.calendarassistant.data.model.ImportResult
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
+
+class SettingsViewModel(
+    private val repository: AppRepository
+) : ViewModel() {
+
+    // 直接观察 Repository 的数据源
+    val settings = repository.settings
+
+    // 日历同步状态
+    private val _syncStatus = MutableStateFlow(CalendarSyncManager.SyncStatus(
+        isEnabled = false,
+        hasPermission = false,
+        targetCalendarId = -1L,
+        lastSyncTime = 0L,
+        mappedEventCount = 0
+    ))
+    val syncStatus: StateFlow<CalendarSyncManager.SyncStatus> = _syncStatus.asStateFlow()
+
+    init {
+        refreshSyncStatus()
+    }
+
+    // 更新 AI 设置
+    fun updateAiSettings(key: String, name: String, url: String) {
+        viewModelScope.launch {
+            val current = settings.value
+            repository.updateSettings(
+                current.copy(
+                    modelKey = key,
+                    modelName = name,
+                    modelUrl = url
+                )
+            )
+        }
+    }
+
+    fun updateMultimodalAiSettings(key: String, name: String, url: String) {
+        viewModelScope.launch {
+            val current = settings.value
+            repository.updateSettings(
+                current.copy(
+                    mmModelKey = key,
+                    mmModelName = name,
+                    mmModelUrl = url
+                )
+            )
+        }
+    }
+
+    // 更新学期开始日期
+    fun updateSemesterStartDate(date: String) {
+        viewModelScope.launch {
+            repository.updateSettings(settings.value.copy(semesterStartDate = date))
+        }
+    }
+
+    // 更新总周数
+    fun updateTotalWeeks(weeks: Int) {
+        viewModelScope.launch {
+            repository.updateSettings(settings.value.copy(totalWeeks = weeks))
+        }
+    }
+
+    // 更新作息时间 JSON
+    fun updateTimeTable(json: String, configJson: String? = null) {
+        viewModelScope.launch {
+            val current = settings.value
+            val updated = if (configJson != null) {
+                current.copy(timeTableJson = json, timeTableConfigJson = configJson)
+            } else {
+                current.copy(timeTableJson = json)
+            }
+            repository.updateSettings(updated)
+        }
+    }
+
+    fun updateTimeTableConfig(json: String) {
+        viewModelScope.launch {
+            repository.updateSettings(settings.value.copy(timeTableConfigJson = json))
+        }
+    }
+
+    // 更新偏好设置（支持单独更新某一项）
+    // 【修改】增加了 pickupAggregation、advanceReminder 和 autoArchive 参数
+    fun updatePreference(
+        showTomorrow: Boolean? = null,
+        dailySummary: Boolean? = null,
+        liveCapsule: Boolean? = null,
+        pickupAggregation: Boolean? = null,
+        edgeBarEnabled: Boolean? = null,
+        networkSpeedCapsule: Boolean? = null,
+        floatingWindow: Boolean? = null,
+        advanceReminderEnabled: Boolean? = null,
+        advanceReminderMinutes: Int? = null,
+        autoArchive: Boolean? = null,
+        useMultimodalAi: Boolean? = null,
+        disableThinking: Boolean? = null,
+        floatingEventRange: Int? = null
+    ) {
+        viewModelScope.launch {
+            var current = settings.value
+            if (showTomorrow != null) current = current.copy(showTomorrowEvents = showTomorrow)
+            if (dailySummary != null) current = current.copy(isDailySummaryEnabled = dailySummary)
+            if (liveCapsule != null) current = current.copy(isLiveCapsuleEnabled = liveCapsule)
+            if (pickupAggregation != null) current = current.copy(isPickupAggregationEnabled = pickupAggregation)
+            if (edgeBarEnabled != null) current = current.copy(edgeBarEnabled = edgeBarEnabled)
+            if (networkSpeedCapsule != null) current = current.copy(isNetworkSpeedCapsuleEnabled = networkSpeedCapsule)
+            if (floatingWindow != null) current = current.copy(isFloatingWindowEnabled = floatingWindow)
+            if (advanceReminderEnabled != null) current = current.copy(isAdvanceReminderEnabled = advanceReminderEnabled)
+            if (advanceReminderMinutes != null) current = current.copy(advanceReminderMinutes = advanceReminderMinutes)
+            if (autoArchive != null) current = current.copy(autoArchiveEnabled = autoArchive)
+            if (useMultimodalAi != null) current = current.copy(useMultimodalAi = useMultimodalAi)
+            if (disableThinking != null) current = current.copy(disableThinking = disableThinking)
+            if (floatingEventRange != null) current = current.copy(floatingEventRange = floatingEventRange)
+
+            repository.updateSettings(current)
+        }
+    }
+
+    // 更新截图延迟
+    fun updateScreenshotDelay(delay: Long) {
+        val current = settings.value
+        if (current.screenshotDelayMs != delay) {
+            viewModelScope.launch {
+                repository.updateSettings(current.copy(screenshotDelayMs = delay))
+            }
+        }
+    }
+
+    // 更新主题模式（1=跟随系统, 2=浅色, 3=深色）
+    fun updateThemeMode(mode: Int) {
+        viewModelScope.launch {
+            repository.updateSettings(settings.value.copy(themeMode = mode))
+        }
+    }
+
+    fun toggleRecurringCalendarSync(enabled: Boolean, callback: suspend (Result<Int>) -> Unit = {}) {
+        viewModelScope.launch {
+            val result = repository.setRecurringCalendarSyncEnabled(enabled)
+            callback(result)
+        }
+    }
+
+    // 更新主题配色方案
+    fun updateThemeColorScheme(scheme: String) {
+        viewModelScope.launch {
+            repository.updateSettings(settings.value.copy(themeColorScheme = scheme))
+        }
+    }
+
+    // 更新深色模式（兼容旧接口）
+    fun updateDarkMode(isDark: Boolean) {
+        viewModelScope.launch {
+            repository.updateSettings(settings.value.copy(
+                isDarkMode = isDark,
+                themeMode = if (isDark) 3 else 2
+            ))
+        }
+    }
+
+    // 更新 UI 大小
+    fun updateUiSize(size: Int) {
+        viewModelScope.launch {
+            repository.updateSettings(settings.value.copy(uiSize = size))
+        }
+    }
+
+    fun updateEdgeBarSettings(
+        enabled: Boolean? = null,
+        side: String? = null,
+        yPercent: Float? = null,
+        widthDp: Int? = null,
+        heightDp: Int? = null,
+        alpha: Float? = null
+    ) {
+        viewModelScope.launch {
+            var current = settings.value
+            if (enabled != null) current = current.copy(edgeBarEnabled = enabled)
+            if (side != null) current = current.copy(edgeBarSide = side)
+            if (yPercent != null) current = current.copy(edgeBarYPercent = yPercent)
+            if (widthDp != null) current = current.copy(edgeBarWidthDp = widthDp)
+            if (heightDp != null) current = current.copy(edgeBarHeightDp = heightDp)
+            if (alpha != null) current = current.copy(edgeBarAlpha = alpha)
+            repository.updateSettings(current)
+        }
+    }
+
+    // 导出数据
+    fun exportData(onSuccess: () -> Unit) {
+        // TODO: 实现具体的导出逻辑
+    }
+
+    // --- 导出/导入功能 ---
+
+    suspend fun exportCoursesData(): String {
+        return repository.exportCoursesData()
+    }
+
+    suspend fun importCoursesData(jsonString: String): Result<Unit> {
+        return repository.importCoursesData(jsonString)
+    }
+
+    suspend fun exportEventsData(): String {
+        return repository.exportEventsData()
+    }
+
+    suspend fun importEventsData(jsonString: String): Result<ImportResult> {
+        return repository.importEventsData(jsonString)
+    }
+
+    fun getCoursesCount(): Int = repository.getCoursesCount()
+    fun getEventsCount(): Int = repository.getEventsCount()
+    fun getTotalEventsCount(): Int = repository.getTotalEventsCount()
+
+    /**
+     * 导入外部课表文件（WakeUp 格式）
+     * @param content 文件内容
+     * @param mode 导入模式（追加/覆盖）
+     * @param importSettings 是否导入设置（开学日期、总周数）
+     * @param callback 导入完成回调，返回成功导入的课程数量
+     */
+    fun importWakeUpFile(
+        content: String,
+        mode: ImportMode,
+        importSettings: Boolean,
+        callback: suspend (Result<Int>) -> Unit
+    ) {
+        viewModelScope.launch {
+            val result = repository.importWakeUpFile(content, mode, importSettings)
+            callback(result)
+        }
+    }
+
+    // ==================== 日历同步相关 ====================
+
+    /**
+     * 刷新同步状态
+     */
+    fun refreshSyncStatus() {
+        viewModelScope.launch {
+            _syncStatus.value = repository.getSyncStatus()
+        }
+    }
+
+    /**
+     * 切换日历同步开关
+     */
+    fun toggleCalendarSync(enabled: Boolean) {
+        viewModelScope.launch {
+            val result = if (enabled) {
+                repository.enableCalendarSync()
+            } else {
+                repository.disableCalendarSync()
+            }
+
+            if (result.isSuccess) {
+                refreshSyncStatus()
+            }
+        }
+    }
+
+    fun enableCalendarSyncAndSyncNow(callback: suspend (Result<Unit>) -> Unit = {}) {
+        viewModelScope.launch {
+            val result = repository.enableCalendarSyncAndSyncNow()
+            refreshSyncStatus()
+            callback(result)
+        }
+    }
+
+    /**
+     * 手动触发同步
+     */
+    suspend fun manualSync(): Result<Unit> {
+        val result = repository.manualSync()
+        if (result.isSuccess) {
+            refreshSyncStatus()
+        }
+        return result
+    }
+
+    /**
+     * 更新捐赠状态
+     */
+    fun updateHasDonated(hasDonated: Boolean) {
+        viewModelScope.launch {
+            repository.updateSettings(
+                repository.settings.value.copy(hasDonated = hasDonated)
+            )
+        }
+    }
+}

@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(tree:*)",
+      "Bash(find:*)",
+      "Bash(findstr:*)",
+      "Bash(./gradlew assembleDebug --no-daemon)",
+      "Bash(./gradlew assembleDebug --console=plain)",
+      "Bash(./gradlew assembleDebug)",
+      "Bash(where java:*)"
+    ]
+  }
+}
