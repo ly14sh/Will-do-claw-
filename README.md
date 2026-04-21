@@ -111,25 +111,6 @@
 3.  连接设备或模拟器（建议 Android 11+ 以获得完整体验）。
 4.  运行 `app` 模块。
 
-## ☕ 支持开发者 
-
-如果您觉得 Will do 帮助到了您，或者您喜欢这个项目，欢迎请作者喝一杯咖啡，这将鼓励我继续维护和完善项目！
-
-<div align="center">
-  <table>
-    <tr>
-      <td align="center">
-        <img src="./CalendarAssistant/docs/wechat-pay.png" width="200" /><br>
-        <b>WeChat Pay / 微信</b>
-      </td>
-      <td width="50"></td>
-      <td align="center">
-        <img src="./CalendarAssistant/docs/alipay.png" width="200" /><br>
-        <b>AliPay / 支付宝</b>
-      </td>
-    </tr>
-  </table>
-</div>
 
 ## 📜 开源协议
 
